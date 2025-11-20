@@ -1,79 +1,102 @@
-import sys
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QImage, QPixmap
 import threading
-from PySide6.QtWidgets import (
-    QApplication, QWidget, QLabel, QPushButton,
-    QGridLayout, QVBoxLayout
-)
-from PySide6 import QtCore, QtGui
-from src.ivent import TakePhotoButton, OKButton, CancelButton
-from src.k24110 import lecture05_01  # lecture05_01 を呼ぶため
+import cv2
 
-class MainWidget(QWidget):
-    def __init__(self):
+class CameraViewer:
+    """カメラ映像の取得・撮影管理クラス"""
+    def __init__(self, delay: int = 10):
+        self.cap = cv2.VideoCapture(0)  # デバイスIDを変更して試す
+        if not self.cap.isOpened():
+            print("カメラが初期化されていません")
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.DELAY = delay
+        self.running = True
+
+        self.capture_flag = False      # GUIからの撮影指示フラグ
+        self.captured_img = None       # 最後のキャプチャ画像
+        self.frame_for_gui = None      # GUI に渡す最新フレーム
+
+    def run(self):
+        """カメラ映像を取得し続け、GUIスレッドに最新フレームを渡す"""
+        while self.running:
+            ret, frame = self.cap.read()
+            if not ret:
+                print("カメラからフレームを取得できませんでした")
+                continue
+
+            print("フレーム取得成功")  # デバッグ用ログ
+
+            # GUI用に保存（表示はGUI側で行う）
+            self.frame_for_gui = frame.copy()
+
+            # 撮影フラグが立った瞬間に元画像を保存
+            if self.capture_flag:
+                self.captured_img = frame.copy()
+                print("📸 写真をキャプチャしました！")
+                self.capture_flag = False
+
+            # 軽く待機
+            cv2.waitKey(self.DELAY)
+
+    def stop(self):
+        """カメラ終了処理"""
+        self.running = False
+        if self.cap.isOpened():
+            self.cap.release()
+        cv2.destroyAllWindows()
+
+class MainWindow(QWidget):
+    """GUIメインウィンドウ"""
+    def __init__(self, camera):
         super().__init__()
-        self.setWindowTitle("画像GUI")
-        self.setGeometry(200, 200, 1200, 700)
+        self.camera = camera
+        self.setWindowTitle("PySide6 Camera Capture")
+        self.resize(800, 600)
 
-        outer_layout = QVBoxLayout()
-        outer_layout.setAlignment(QtCore.Qt.AlignCenter)
-        self.setLayout(outer_layout)
+        self.label = QLabel("カメラ映像がここに表示されます")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.capture_button = QPushButton("撮影")
+        self.capture_button.clicked.connect(self.on_capture)
+        self.captured_label = QLabel("キャプチャ画像")
+        self.captured_label.setAlignment(Qt.AlignCenter)
 
-        layout = QGridLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(20)
+        layout = QVBoxLayout()
+        layout.addWidget(self.label)
+        layout.addWidget(self.capture_button)
+        layout.addWidget(self.captured_label)
+        self.setLayout(layout)
 
-        # 左上：カメラ映像 (cv2.imshow は別ウィンドウで)
-        self.camera_label = QLabel("カメラ映像")
-        self.camera_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.camera_label.setFixedSize(350, 220)
-        layout.addWidget(self.camera_label, 0, 0, QtCore.Qt.AlignCenter)
+        # タイマーで GUI 更新
+        self.startTimer(30)
 
-        # 右上：撮影画像
-        self.shot_label = QLabel("撮影画像")
-        self.shot_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.shot_label.setFixedSize(350, 220)
-        layout.addWidget(self.shot_label, 0, 2, QtCore.Qt.AlignCenter)
+    def timerEvent(self, event):
+        frame = self.camera.frame_for_gui
+        if frame is None:
+            return
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb.shape
+        qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(qimg)
+        pixmap = pixmap.scaled(self.label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.label.setPixmap(pixmap)
 
-        # 中央：はい / いいえ
-        self.yes_button = QPushButton("はい")
-        self.no_button = QPushButton("いいえ")
-        layout.addWidget(self.yes_button, 1, 2, QtCore.Qt.AlignCenter)
-        layout.addWidget(self.no_button, 2, 2, QtCore.Qt.AlignCenter)
+    def on_capture(self):
+        self.camera.capture_flag = True
+        def update_preview():
+            while self.camera.capture_flag:
+                pass
+            if self.camera.captured_img is not None:
+                rgb = cv2.cvtColor(self.camera.captured_img, cv2.COLOR_BGR2RGB)
+                h, w, ch = rgb.shape
+                qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888)
+                pixmap = QPixmap.fromImage(qimg)
+                pixmap = pixmap.scaled(self.captured_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.captured_label.setPixmap(pixmap)
+        threading.Thread(target=update_preview, daemon=True).start()
 
-        # 左下：撮影ボタン
-        self.TakePhotoButton = QPushButton("撮影")
-        self.TakePhotoButton.setFixedSize(160, 80)
-        layout.addWidget(self.TakePhotoButton, 1, 0, QtCore.Qt.AlignCenter)
-        self.TakePhotoButton.clicked.connect(self.start_capture_thread)
-
-        # 右下：合成画像
-        self.result_label = QLabel("合成画像")
-        self.result_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.result_label.setFixedSize(350, 220)
-        layout.addWidget(self.result_label, 3, 2, QtCore.Qt.AlignCenter)
-
-        outer_layout.addLayout(layout)
-
-    def start_capture_thread(self):
-        """ボタン押下でスレッドを立ててカメラ撮影＋合成処理"""
-        thread = threading.Thread(target=self.capture_and_combine)
-        thread.start()
-
-    def capture_and_combine(self):
-        """k24110 の関数を呼び出して画像を合成し QLabel に表示"""
-        k24110.lecture05_01()  # カメラ起動・合成画像生成
-
-        # GUI に反映する
-        img_path = "output_images/lecture05_01_k24110.png"
-        pixmap = QtGui.QPixmap(img_path)
-        pixmap = pixmap.scaled(self.result_label.width(), self.result_label.height(), QtCore.Qt.KeepAspectRatio)
-        
-        # GUI操作はメインスレッドで行う
-        self.result_label.setPixmap(pixmap)
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    app.setStyleSheet("QLabel{border: 1px solid black; border-radius:15px;}")
-    w = MainWidget()
-    w.show()
-    sys.exit(app.exec())
+    def closeEvent(self, event):
+        self.camera.stop()
+        event.accept()
