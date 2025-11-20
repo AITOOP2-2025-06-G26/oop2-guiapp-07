@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6 import QtCore, QtGui
 from src.ivent import TakePhotoButton, OKButton, CancelButton
-from my_module.K21999 import k24110  # lecture05_01 を呼ぶため
+from my_module.K21999 import k24110  # lecture05_01 を呼ぶためni
 
 class MainWidget(QWidget):
     def __init__(self):
