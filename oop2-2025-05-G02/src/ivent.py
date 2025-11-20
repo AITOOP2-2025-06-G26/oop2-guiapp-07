@@ -24,7 +24,7 @@ class TakePhotoButton(QPushButton):
 
 class OKButton(QPushButton):
     """
-    
+    このボタンを押したら、保存した写真から合成を行う。
     """
     def __init__(self, status):
         super().__init__()
@@ -37,7 +37,7 @@ class OKButton(QPushButton):
 
 class CancelButton(QPushButton):
     """
-    
+    このボタンを押したら、写真撮影状態に戻る。
     """
     def __init__(self, status):
         super().__init__()
