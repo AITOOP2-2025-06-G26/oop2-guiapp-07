@@ -1,6 +1,6 @@
 import cv2
 import cv2
-from ivent import Takeforbotton
+from ivent import TakePhotoButton
 import uuid
 import os
 
@@ -14,8 +14,8 @@ def start_capture(picture):
     """
 
     while True:
-        Takeforbotton.ok_flag = False
-        Takeforbotton.retry_flag = False
+        TakePhotoButton.ok_flag = False
+        TakePhotoButton.retry_flag = False
 
         cap = cv2.VideoCapture(0)
 
@@ -27,13 +27,13 @@ def start_capture(picture):
             cv2.imshow("Capture", frame)
 
             # キャンセル（いいえ）
-            if Takeforbotton.cancel_capture_flag:
+            if TakePhotoButton.cancel_capture_flag:
                 cap.release()
                 cv2.destroyAllWindows()
                 return
 
             # 撮影確定（担当Aが OK を押したとき）
-            if Takeforbotton.ok_flag:
+            if TakePhotoButton.ok_flag:
                 img_name = f"{uuid.uuid4().hex}.png"
                 save_path = os.path.join(SAVE_DIR, img_name)
 
@@ -47,14 +47,8 @@ def start_capture(picture):
                 return  # 完了
 
             # いいえ → 撮り直し
-            if Takeforbotton.retry_flag:
+            if TakePhotoButton.retry_flag:
                 break  # whileを抜けて撮影し直し
-
-            # qキーで終了（デバッグ用）
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                cap.release()
-                cv2.destroyAllWindows()
-                return
 
         cap.release()
         cv2.destroyAllWindows()
