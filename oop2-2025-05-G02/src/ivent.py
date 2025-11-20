@@ -5,6 +5,8 @@ from PySide6 import QtGui
 import numpy as np
 import cv2
 
+# from src.kansu.py import 
+
 class TakePhotoButton(QPushButton):
     """
     このボタンを押したら、カメラで写真を撮る。
