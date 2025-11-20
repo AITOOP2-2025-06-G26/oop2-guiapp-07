@@ -1,9 +1,8 @@
 import sys
-from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout
+from PySide6.QtWidgets import QPushButton
 from PySide6 import QtGui
 
 import numpy as np
-import cv2
 
 class TakePhotoButton(QPushButton):
     """
@@ -14,6 +13,7 @@ class TakePhotoButton(QPushButton):
         super().__init__()
         self.status = status
         self.setFont(QtGui.QFont('Arial', 40))
+        self.setText("撮影")
         self.clicked.connect(self.__click)
 
     def __click(self):
@@ -28,6 +28,7 @@ class OKButton(QPushButton):
         super().__init__()
         self.status = status
         self.setFont(QtGui.QFont('Arial', 40))
+        self.setText("OK")
         self.clicked.connect(self.__click)
 
     def __click(self):
@@ -41,6 +42,7 @@ class CancelButton(QPushButton):
         super().__init__()
         self.status = status
         self.setFont(QtGui.QFont('Arial', 40))
+        self.setText("Cancel")
         self.clicked.connect(self.__click)
 
     def __click(self):
