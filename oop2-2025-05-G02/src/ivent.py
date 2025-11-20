@@ -1,9 +1,8 @@
 import sys
-from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout
+from PySide6.QtWidgets import QPushButton
 from PySide6 import QtGui
 
 import numpy as np
-import cv2
 
 # from src.kansu.py import 
 
