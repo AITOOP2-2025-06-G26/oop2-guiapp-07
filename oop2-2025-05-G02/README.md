@@ -27,11 +27,24 @@ pyenv local 3.17.3
 
 ### 2. 依存パッケージのインストール
 
-OpenCV を pip でインストールします。
+GUI アプリケーションと画像処理で必要なライブラリをインストールします。
 
 ```bash
-pip install opencv-python
+python -m pip install --upgrade pip
+python -m pip install PySide6 opencv-python numpy
 ```
+
+カメラを利用するため、実機の接続と OpenCV での認識が事前にできていることを確認してください。
+
+### 3. 実行方法（GUI）
+
+```bash
+python main.py
+```
+
+`main.py` が `src/camera.py` でカメラ映像を取得しつつ、`GUI.py` にある PySide6 ウィンドウでライブプレビュー、撮影・合成ボタン、キャプチャ/合成結果のプレビューを表示します。
+
+撮影ボタンを押すと内部的に `CameraViewer.capture_flag` が立ち、保存した画像はキャプチャプレビュー欄に表示されます。合成ボタンを押すと `images/google.png` 中の白ぬき箇所にキャプチャ画像を繰り返し貼り付け、`output_images/capture_composite.png` に出力されます。
 
 ---
 
